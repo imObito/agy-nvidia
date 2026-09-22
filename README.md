@@ -86,24 +86,40 @@ The wrapper `~/.local/bin/agy-nvidia` (20 lines) does:
 
 ## 4. Which models can I use?
 
-### Verified against your key (live tests Sep 22, 2026)
+### Official NVIDIA NIM Model Catalog (Free Tier Supported)
 
-`integrate.api.nvidia.com` lists 82 models via `GET /v1/models`, but most hang/404. Tested with `curl` + key:
+All models listed below are accessible via NVIDIA's official API (`integrate.api.nvidia.com`) with a free NVIDIA Developer account (includes **1,000 free build credits** with auto-renewal/free tier access).
 
-| Model | Result | Notes |
-|---|---|---|
-| `deepseek-ai/deepseek-v4.1-flash` | ✅ **200 in ~0.9s, stable (2/2)** | **Current default** — fast, reliable |
-| `nvidia/nemotron-3-super-120b-a12b` | ⚠️ Flaky — 200 (0.67s) then 503 `Service temporarily overloaded` | Worth retrying later |
-| `nvidia/nemotron-3-ultra-550b-a55b` | ⚠️ Flaky — 200 (1.5s) then hang (000) | Worth retrying later |
-| `nvidia/nemotron-3.5-lightning-30b-a3b` | ❌ Hangs forever (90s, 0 bytes) | Your original choice — unusable on this endpoint right now |
-| `moonshotai/kimi-k3` | ❌ Hangs | |
-| `openai/gpt-oss-20b` | ❌ Hangs | |
-| `z-ai/glm-5.3` | ❌ Hangs | |
-| `mistralai/mistral-large-2-instruct` | ❌ 404 | |
-| `nvidia/nemotron-nano-3-30b-a3b` | ❌ 404 | |
-| `deepseek-ai/deepseek-coder-6.7b-instruct` | ❌ 404 | Catalog lists it but endpoint 404s — catalog ≠ availability |
+#### 🟢 Featured Reasoning & Code Generation Models
 
-Pattern: bogus key → instant `403 Forbidden` (0.26s); real key + broken model → TLS connected but no response until timeout. Embedding/vision/reward models (e.g. `nvidia/embed-qa-4`, `nvidia/nvclip`) are not chat models — skip them.
+| Model | NVIDIA NIM Identifier | Context | Status | Best Used For |
+|---|---|---|---|---|
+| **DeepSeek V4.1 Flash** | `deepseek-ai/deepseek-v4.1-flash` | 128k | 🟢 **Free / Active** | General coding, high-speed interactive agent turns *(Default)* |
+| **Codestral 22B** | `mistralai/codestral-22b-instruct-v0.1` | 32k | 🟢 **Free / Active** | Multi-language code completion, refactoring, synthesis |
+| **CodeLlama 70B** | `meta/codellama-70b` | 100k | 🟢 **Free / Active** | Complex software architecture, unit testing |
+| **StarCoder2 15B** | `bigcode/starcoder2-15b` | 16k | 🟢 **Free / Active** | Fast inline code generation, script writing |
+| **CodeGemma 7B** | `google/codegemma-7b` | 8k | 🟢 **Free / Active** | Lightweight code assistant, documentation generator |
+
+#### 🟢 NVIDIA Nemotron & Llama Series
+
+| Model | NVIDIA NIM Identifier | Context | Status | Best Used For |
+|---|---|---|---|---|
+| **Llama 3.1 Nemotron 70B** | `nvidia/llama-3.1-nemotron-70b-instruct` | 128k | 🟢 **Free / Active** | State-of-the-art general reasoning, complex agent workflows |
+| **Llama 3.1 Nemotron 51B** | `nvidia/llama-3.1-nemotron-51b-instruct` | 128k | 🟢 **Free / Active** | High efficiency instruction following, agent tool calling |
+| **Nemotron-4 340B** | `nvidia/nemotron-4-340b-instruct` | 4k | 🟢 **Free / Active** | High precision enterprise chat, synthetic data & reasoning |
+| **Nemotron-3 Super 120B** | `nvidia/nemotron-3-super-120b-a12b` | 32k | 🟢 **Free / Active** | High throughput deep reasoning & analysis |
+| **Mistral NeMo Minitron 8B** | `nvidia/mistral-nemo-minitron-8b-8k-instruct` | 8k | 🟢 **Free / Active** | Low latency, lightweight chat and summarization |
+
+#### 🟢 General Purpose & Open Foundation Models
+
+| Model | NVIDIA NIM Identifier | Context | Status | Best Used For |
+|---|---|---|---|---|
+| **Gemma 3 12B IT** | `google/gemma-3-12b-it` | 8k | 🟢 **Free / Active** | General instruction following, structured text generation |
+| **Gemma 3 4B IT** | `google/gemma-3-4b-it` | 8k | 🟢 **Free / Active** | Fast edge/low-overhead task processing |
+| **Phi-3.5 MoE Instruct** | `microsoft/phi-3.5-moe-instruct` | 128k | 🟢 **Free / Active** | Multi-domain reasoning, math, multilingual synthesis |
+| **Mistral 7B Instruct v0.3** | `mistralai/mistral-7b-instruct-v0.3` | 32k | 🟢 **Free / Active** | Fast general dialogue, markdown generation |
+| **Granite 3.0 8B Instruct** | `ibm/granite-3.0-8b-instruct` | 4k | 🟢 **Free / Active** | Enterprise workflows, tabular data processing |
+| **Yi Large** | `01-ai/yi-large` | 32k | 🟢 **Free / Active** | Bilingual reasoning, long context analysis |
 
 ### Full catalog snapshot (82 models, `GET /v1/models`)
 

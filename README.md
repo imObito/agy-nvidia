@@ -1,10 +1,14 @@
 # agy-nvidia — Antigravity CLI via NVIDIA APIs
 
-Run Google's **Antigravity CLI (`agy`)** against **NVIDIA's hosted API** (`integrate.api.nvidia.com`) without touching your standalone Antigravity IDE/app.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![LiteLLM Proxy](https://img.shields.io/badge/Proxy-LiteLLM-green.svg)](https://github.com/BerriAI/litellm)
+[![NVIDIA NIM](https://img.shields.io/badge/NVIDIA-API%20%2F%20NIM-76B900.svg)](https://build.nvidia.com)
+
+**How to use Antigravity unlimited**: Run Google's **Antigravity CLI (`agy`)** against **NVIDIA's hosted API** (`integrate.api.nvidia.com`) with custom models without hitting Google account quota limits or touching your standalone Antigravity IDE.
 
 > `agy` only supports custom endpoints via `modelProvider: "gemini"` + `GEMINI_API_KEY` + `GOOGLE_GEMINI_BASE_URL` (**Gemini `generateContent` protocol**).  
 > NVIDIA only speaks **OpenAI `chat/completions` protocol**.  
-> This repo puts a **LiteLLM** translation proxy in between.
+> This repo provides an automated, isolated **LiteLLM** translation proxy in between.
 
 ```
 agy  --(Gemini format, x-goog-api-key, :streamGenerateContent?alt=sse)-->  LiteLLM :4000  --(OpenAI format, Bearer nvapi-...)-->  integrate.api.nvidia.com
@@ -21,7 +25,7 @@ Verified end-to-end Sep 22 2026 on CachyOS. Standalone Antigravity IDE left unto
 uv tool install --python 3.12 'litellm[proxy]'
 
 # clone this repo
-git clone <your-repo-url> ~/agy-nvidia
+git clone https://github.com/imObito/agy-nvidia.git ~/agy-nvidia
 cd ~/agy-nvidia
 
 # install files (see install.sh)

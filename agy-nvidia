@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Antigravity CLI -> NVIDIA APIs. Fully isolated from the standalone Antigravity app:
+#  - its own config root via --gemini-dir (never writes to ~/.gemini)
+#  - env vars scoped to this process only
+set -u
+[ -f "$HOME/.config/agy-nvidia/.env" ] && set -a && . "$HOME/.config/agy-nvidia/.env" && set +a
+# start the translation proxy if it isn't running
+if ! curl -s --max-time 2 http://127.0.0.1:4000/health/liveliness >/dev/null 2>&1; then
+  cd "$HOME/.config/agy-nvidia"
+  nohup ~/.local/bin/litellm --config litellm.yaml --port 4000 --host 127.0.0.1 \
+    > litellm.log 2>&1 &
+  disown
+  for _ in $(seq 1 15); do
+    sleep 1
+    curl -s --max-time 2 http://127.0.0.1:4000/health/liveliness >/dev/null 2>&1 && break
+  done
+fi
+export GEMINI_API_KEY="${NVIDIA_API_KEY:-nvidia}"
+export GOOGLE_GEMINI_BASE_URL="http://127.0.0.1:4000"
+exec ~/.local/bin/agy --gemini_dir="$HOME/.gemini-agy-nvidia" "$@"

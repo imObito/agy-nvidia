@@ -1,0 +1,5 @@
+# secrets & runtime — never commit
+.env
+litellm.log
+*.log
+.gemini-agy-nvidia/

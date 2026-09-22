@@ -1,0 +1,64 @@
+# LiteLLM proxy: translates Antigravity CLI's Gemini-format requests
+# into OpenAI-format calls against NVIDIA build.nvidia.com.
+# Used only by the `agy-nvidia` wrapper; the standalone Antigravity app
+# never touches this file or this port.
+model_list:
+  # -- observed in live capture from agy --
+  - model_name: gemini-3.1-pro-preview
+    litellm_params: &nemotron
+      model: openai/deepseek-ai/deepseek-v4.1-flash
+      api_base: https://integrate.api.nvidia.com/v1
+      api_key: os.environ/NVIDIA_API_KEY
+  - model_name: gemini-3.1-flash-lite-preview
+    litellm_params: *nemotron
+
+  # -- picker slugs / alternates (agy may resolve these depending on settings) --
+  - model_name: gemini-3.1-pro
+    litellm_params: *nemotron
+  - model_name: gemini-3.1-pro-high
+    litellm_params: *nemotron
+  - model_name: gemini-3.1-pro-low
+    litellm_params: *nemotron
+  - model_name: gemini-3.1-pro-low-thinking
+    litellm_params: *nemotron
+  - model_name: gemini-3.1-pro-preview-custom
+    litellm_params: *nemotron
+  - model_name: gemini-3.1-flash-lite
+    litellm_params: *nemotron
+  - model_name: gemini-3-flash-preview
+    litellm_params: *nemotron
+  - model_name: gemini-3.5-flash-extra-low
+    litellm_params: *nemotron
+  - model_name: gemini-3.5-flash-low
+    litellm_params: *nemotron
+  - model_name: gemini-3.6-flash-high
+    litellm_params: *nemotron
+  - model_name: gemini-3.6-flash-medium
+    litellm_params: *nemotron
+  - model_name: gemini-3.6-flash-low
+    litellm_params: *nemotron
+  - model_name: gemini-3.7-flash-high
+    litellm_params: *nemotron
+  - model_name: gemini-3.7-flash-medium
+    litellm_params: *nemotron
+  - model_name: gemini-3.7-flash-low
+    litellm_params: *nemotron
+  - model_name: gemini-3.8-flash
+    litellm_params: *nemotron
+  - model_name: gemini-3.8-flash-high
+    litellm_params: *nemotron
+  - model_name: gemini-3.8-flash-medium
+    litellm_params: *nemotron
+  - model_name: gemini-3.8-flash-low
+    litellm_params: *nemotron
+  - model_name: claude-sonnet-4-6
+    litellm_params: *nemotron
+  - model_name: claude-opus-4-6-thinking
+    litellm_params: *nemotron
+  - model_name: gpt-oss-120b-medium
+    litellm_params: *nemotron
+
+litellm_settings:
+  drop_params: true          # discard Gemini-only params NVIDIA doesn't understand
+  set_verbose: false
+  num_retries: 2

@@ -1,0 +1,8 @@
+{
+  "colorScheme": "dark",
+  "model": "Gemini 3.1 Pro (Low)",
+  "modelProvider": "gemini",
+  "trustedWorkspaces": [
+    "/home/xenon"
+  ]
+}

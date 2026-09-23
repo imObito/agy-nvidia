@@ -3,3 +3,10 @@
 litellm.log
 *.log
 .gemini-agy-nvidia/
+api_keys.txt
+api_keys*.txt
+*.key
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store

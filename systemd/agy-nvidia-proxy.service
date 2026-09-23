@@ -5,7 +5,7 @@ After=network-online.target
 [Service]
 WorkingDirectory=%h/.config/agy-nvidia
 EnvironmentFile=%h/.config/agy-nvidia/.env
-ExecStart=%h/.local/bin/litellm --config %h/.config/agy-nvidia/litellm.yaml --port 4000 --host 127.0.0.1
+ExecStart=%h/.local/bin/agy-nvidia-router --config %h/.config/agy-nvidia/litellm.yaml
 Restart=on-failure
 RestartSec=3
 

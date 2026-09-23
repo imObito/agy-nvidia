@@ -28,6 +28,21 @@ chmod 600 "$CFG/.env"
 echo "==> $BIN/agy-nvidia"
 install -m 755 "$HERE/agy-nvidia" "$BIN/agy-nvidia"
 
+echo "==> $BIN/agy-nvidia-router"
+install -m 755 "$HERE/router.py" "$BIN/agy-nvidia-router"
+
+echo "==> $BIN/agy-nvidia-web"
+install -m 755 "$HERE/agy-nvidia-web" "$BIN/agy-nvidia-web"
+install -m 755 "$HERE/web_server.py" "$BIN/agy-nvidia-web-server"
+WEB_ROOT="$HOME/.local/share/agy-nvidia-web"
+rm -rf "$WEB_ROOT"
+mkdir -p "$WEB_ROOT"
+cp -a "$HERE/ui/." "$WEB_ROOT/"
+
+if [ -f "$HERE/switch-model.ps1" ]; then
+  install -m 644 "$HERE/switch-model.ps1" "$BIN/switch-model.ps1"
+fi
+
 echo "==> $ISO/settings.json"
 if [ ! -f "$ISO/settings.json" ]; then
   install -m 600 "$HERE/settings.json" "$ISO/settings.json"

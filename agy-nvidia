@@ -3,18 +3,45 @@
 #  - its own config root via --gemini-dir (never writes to ~/.gemini)
 #  - env vars scoped to this process only
 set -u
-[ -f "$HOME/.config/agy-nvidia/.env" ] && set -a && . "$HOME/.config/agy-nvidia/.env" && set +a
-# start the translation proxy if it isn't running
-if ! curl -s --max-time 2 http://127.0.0.1:4000/health/liveliness >/dev/null 2>&1; then
-  cd "$HOME/.config/agy-nvidia"
-  nohup ~/.local/bin/litellm --config litellm.yaml --port 4000 --host 127.0.0.1 \
-    > litellm.log 2>&1 &
-  disown
-  for _ in $(seq 1 15); do
-    sleep 1
-    curl -s --max-time 2 http://127.0.0.1:4000/health/liveliness >/dev/null 2>&1 && break
-  done
+if [ "${1:-}" = "web" ]; then
+  shift
+  exec "$HOME/.local/bin/agy-nvidia-web" "$@"
 fi
-export GEMINI_API_KEY="${NVIDIA_API_KEY:-nvidia}"
+[ -f "$HOME/.config/agy-nvidia/.env" ] && set -a && . "$HOME/.config/agy-nvidia/.env" && set +a
+if [ -z "${NVIDIA_API_KEY:-}" ] || [ "$NVIDIA_API_KEY" = "paste-your-nvapi-key-here" ]; then
+  echo "agy-nvidia: NVIDIA_API_KEY is missing or still the placeholder." >&2
+  echo "Set it in $HOME/.config/agy-nvidia/.env, then retry." >&2
+  exit 1
+fi
+# Start the translation proxy if it isn't running. A single lock prevents two
+# wrapper invocations from starting competing LiteLLM processes.
+if ! curl -fsS --max-time 2 http://127.0.0.1:4000/health/liveliness >/dev/null 2>&1; then
+  lock="$HOME/.config/agy-nvidia/.proxy-start.lock"
+  if mkdir "$lock" 2>/dev/null; then
+    trap 'rmdir "$lock" 2>/dev/null || true' EXIT
+    cd "$HOME/.config/agy-nvidia"
+    if command -v systemctl >/dev/null 2>&1 && \
+       systemctl --user cat agy-nvidia-proxy.service >/dev/null 2>&1; then
+      # Use one owner for the proxy. Starting a second manual LiteLLM process
+      # can make LiteLLM silently choose a random port when :4000 is occupied.
+      systemctl --user start agy-nvidia-proxy.service >/dev/null 2>&1 || true
+    else
+      nohup "$HOME/.local/bin/litellm" --config litellm.yaml --port 4000 --host 127.0.0.1 \
+        > litellm.log 2>&1 &
+      disown
+    fi
+    for _ in $(seq 1 30); do
+      sleep 1
+      curl -fsS --max-time 2 http://127.0.0.1:4000/health/liveliness >/dev/null 2>&1 && break
+    done
+    rmdir "$lock" 2>/dev/null || true
+    trap - EXIT
+  fi
+  if ! curl -fsS --max-time 2 http://127.0.0.1:4000/health/liveliness >/dev/null 2>&1; then
+    echo "agy-nvidia: LiteLLM failed to start; see $HOME/.config/agy-nvidia/litellm.log" >&2
+    exit 1
+  fi
+fi
+export GEMINI_API_KEY="$NVIDIA_API_KEY"
 export GOOGLE_GEMINI_BASE_URL="http://127.0.0.1:4000"
 exec ~/.local/bin/agy --gemini_dir="$HOME/.gemini-agy-nvidia" "$@"

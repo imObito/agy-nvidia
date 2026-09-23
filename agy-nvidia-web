@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# agy-nvidia-web — launch the local web interface.
+set -euo pipefail
+PORT="${AGY_NVIDIA_WEB_PORT:-5173}"
+UI_DIR="${AGY_NVIDIA_WEB_ROOT:-$HOME/.local/share/agy-nvidia-web}"
+if [ ! -f "$UI_DIR/index.html" ]; then
+  UI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ui"
+fi
+[[ -f "$UI_DIR/index.html" ]] || { echo "AGY NVIDIA web assets not found. Run: bash ~/agy-nvidia/install.sh" >&2; exit 1; }
+
+if command -v systemctl >/dev/null 2>&1 && systemctl --user cat agy-nvidia-proxy.service >/dev/null 2>&1; then
+  if ! curl -fsS --max-time 2 http://127.0.0.1:4000/health/liveliness >/dev/null 2>&1; then
+    systemctl --user start agy-nvidia-proxy.service
+  fi
+  for _ in $(seq 1 60); do
+    sleep 1
+    curl -fsS --max-time 2 http://127.0.0.1:4000/health/liveliness >/dev/null 2>&1 && break
+  done
+fi
+
+if curl -fsS --max-time 2 "http://127.0.0.1:${PORT}/" >/dev/null 2>&1; then
+  echo "AGY NVIDIA web is already running on port ${PORT}."
+  ips="$(ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1 || true)"
+  for ip in $ips; do echo "  http://${ip}:${PORT}/"; done
+  exit 0
+fi
+
+echo "Starting AGY NVIDIA web on port ${PORT}."
+hostname -I 2>/dev/null | awk -v p="$PORT" '{print "  http://" $1 ":" p "/"}'
+export AGY_NVIDIA_WEB_PORT="$PORT" AGY_NVIDIA_WEB_ROOT="$UI_DIR"
+exec python3 "$HOME/.local/bin/agy-nvidia-web-server"

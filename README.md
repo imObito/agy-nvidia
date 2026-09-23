@@ -11,10 +11,18 @@
 > This repo provides an automated, isolated **LiteLLM** translation proxy in between.
 
 ```
-agy  --(Gemini format, x-goog-api-key, :streamGenerateContent?alt=sse)-->  LiteLLM :4000  --(OpenAI format, Bearer nvapi-...)-->  integrate.api.nvidia.com
+agy / AGY NVIDIA Studio
+  --(Gemini format, x-goog-api-key, :streamGenerateContent?alt=sse)-->
+  agy-nvidia-router :4000
+  --(local reverse proxy + model health/fallback)-->
+  LiteLLM :4001
+  --(OpenAI format, Bearer nvapi-...)-->
+  integrate.api.nvidia.com
 ```
 
-Verified end-to-end Sep 22 2026 on CachyOS. Standalone Antigravity IDE left untouched (isolated via `--gemini_dir`).
+The router owns the public local endpoint. LiteLLM is kept on an internal port so the router can perform bounded pre-stream fallback and parallel `"yo"` health probes when a primary model fails. A failure after SSE bytes have already reached the client cannot be replaced safely; the request must be retried on the next turn.
+
+The web UI is a local browser interface served on port `5173`. It uses the router through a same-origin web backend when packaged/installed through `agy-nvidia web`; the router itself is not intended to be exposed directly to the LAN.
 
 ---
 
@@ -56,6 +64,7 @@ systemctl --user enable --now agy-nvidia-proxy
 | Command | What it does |
 |---|---|
 | `agy-nvidia` | Interactive TUI (NVIDIA backend) |
+| `agy-nvidia web` | Start the local AGY NVIDIA Studio web interface on port 5173 |
 | `agy-nvidia -p "prompt"` | Print mode (one turn, exits) |
 | `agy-nvidia --help` | Same flags as `agy` |
 | `agy` | Original Google-auth CLI (untouched) |
@@ -67,13 +76,39 @@ The wrapper `~/.local/bin/agy-nvidia` (20 lines) does:
 3. Sets `GEMINI_API_KEY` + `GOOGLE_GEMINI_BASE_URL=http://127.0.0.1:4000` (scoped to this process)
 4. `exec agy --gemini_dir=~/.gemini-agy-nvidia "$@"`
 
+## 3. Web interface
+
+Start the local web interface with:
+
+```bash
+agy-nvidia web
+```
+
+It serves the UI on port `5173` and prints the machine's local network URL. The interface includes:
+
+- streaming chat;
+- browser-local conversation history;
+- model selector;
+- settings/theme controls;
+- router log view;
+- Code & Changes panel;
+- model health/status area.
+
+The current Code & Changes panel extracts fenced code blocks from model responses. It does not yet claim to be a real filesystem diff watcher. Real file tracking requires a workspace watcher connected to the application backend.
+
+For browser deployments, API calls must go through a same-origin backend. Do not expose the router or LiteLLM port publicly. The web UI is intended for local use and future AppImage packaging.
+
 ---
 
-## 3. Files & where things live
+## 4. Files & where things live
 
 | Path | Purpose | Committed? |
 |---|---|---|
-| `litellm.yaml` | LiteLLM config — model alias table (all `agy` model names → one NVIDIA model via YAML anchor `&nemotron`) | ✅ |
+| `router.py` | Local reverse proxy, health probes, bounded pre-stream model selection | ✅ |
+| `agy-nvidia-web` | Starts the local web interface on port 5173 | ✅ |
+| `ui/` | Premium local web UI: chat, history, model selector, settings, logs, Code & Changes panel | ✅ |
+| `switch-model.sh` / `switch-model.bat` | Model-group and API-key switching for Linux/Windows | ✅ |
+| `litellm.yaml` | LiteLLM model alias table and finite fallback routes | ✅ |
 | `agy-nvidia` | Wrapper script (`~/.local/bin/agy-nvidia`) | ✅ |
 | `settings.json` | Template for `~/.gemini-agy-nvidia/antigravity-cli/settings.json` (`modelProvider: gemini`) | ✅ |
 | `systemd/agy-nvidia-proxy.service` | Optional persistent systemd user unit | ✅ |
@@ -84,7 +119,11 @@ The wrapper `~/.local/bin/agy-nvidia` (20 lines) does:
 
 ---
 
-## 4. Which models can I use?
+## 5. Which models can I use?
+
+The model catalog is larger than the four currently used by the initial router profile. The UI and router should treat the catalog as dynamic: chat-capable NVIDIA models can be added to the model registry and health-checked in parallel, while embeddings, safety, moderation, image, and video models should be excluded from chat routing.
+
+The current `litellm.yaml` profile keeps the Gemini aliases stable and maps them to the configured NVIDIA group targets. The router can probe additional eligible models independently and retry the original request once through the first healthy responder. Do not assume that a model appearing in the catalog is permanently healthy or suitable for agent/tool use; verify it with a small probe first.
 
 ### Official NVIDIA NIM Model Catalog (Free Tier Supported)
 
@@ -208,7 +247,7 @@ z-ai/glm-5.3
 
 ---
 
-## 5. How to switch models
+## 6. How to switch models
 
 ### Test a model first (always do this)
 
@@ -223,7 +262,7 @@ curl -s --max-time 20 https://integrate.api.nvidia.com/v1/chat/completions \
 
 ### Switch every `agy` alias at once (common case)
 
-All 20 `agy` model names in `litellm.yaml` share one YAML anchor `&nemotron`. Change that one line:
+The current profile groups aliases with YAML anchors (`&pro`, `&free`, `&super`, `&ultra`). Change the model under the group you want, then restart the router. The web UI model selector changes the request alias; `switch-model.sh` and `switch-model.bat` change the active group mapping.
 
 ```bash
 nano ~/.config/agy-nvidia/litellm.yaml
@@ -264,7 +303,7 @@ If `agy` ever asks for a name not in `model_list`, LiteLLM returns 404 — add t
 
 ---
 
-## 6. Proxy management
+## 7. Proxy management
 
 ```bash
 systemctl --user status agy-nvidia-proxy      # running?
@@ -280,7 +319,7 @@ The wrapper `agy-nvidia` also auto-starts the proxy via `nohup` if the health ch
 
 ---
 
-## 7. Isolation — why the standalone app is safe
+## 8. Isolation — why the standalone app is safe
 
 * **Separate config root**: wrapper passes `--gemini_dir=~/.gemini-agy-nvidia` (not `~/.gemini`). All history/conversations/settings live there.
 * **Scoped env vars**: `GEMINI_API_KEY` / `GOOGLE_GEMINI_BASE_URL` are exported only inside the wrapper process.
@@ -292,7 +331,7 @@ The wrapper `agy-nvidia` also auto-starts the proxy via `nohup` if the health ch
 
 ---
 
-## 8. Architecture notes — why this design
+## 9. Architecture notes — why this design
 
 The pasted instructions claiming `modelProvider: "openai-compatible"` + `baseURL` + `apiKey` in `settings.json` are **hallucinated** — binary verified: only `modelProvider: "gemini"` is recognized (everything else is silently ignored). Verified: `modelProvider: "gemini"` without `GEMINI_API_KEY` → immediate error `GEMINI_API_KEY environment variable is not set`. `GOOGLE_GEMINI_BASE_URL` only works with the Gemini protocol. `MCP` (`mcp_config.json`) only adds tools, it cannot change the model backend.
 
@@ -300,7 +339,7 @@ LiteLLM is used because it natively translates the Gemini `generateContent` SSE 
 
 ---
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|
@@ -313,7 +352,7 @@ LiteLLM is used because it natively translates the Gemini `generateContent` SSE 
 
 ---
 
-## 10. Security
+## 11. Security
 
 * API key is in `~/.config/agy-nvidia/.env` and (transiently) in the systemd unit's `Environment=` line. Never commit `.env` or the transient unit dump.
 * This README and the repo contain **no secrets** (`grep -r nvapi-` must be empty before pushing).
@@ -321,7 +360,33 @@ LiteLLM is used because it natively translates the Gemini `generateContent` SSE 
 
 ---
 
-## 11. Uninstall / reset
+## 12. AppImage roadmap
+
+The web interface is structured to be packaged later as an AppImage:
+
+```text
+AppImage
+├── AGY NVIDIA Studio web UI
+├── local web/API backend
+├── router
+├── LiteLLM runtime
+└── model catalog
+```
+
+The AppImage must not contain the NVIDIA API key. The key should be entered through Settings and stored outside the image in the user's runtime configuration directory. The AppImage should keep the router and LiteLLM on loopback interfaces unless the user explicitly enables LAN access.
+
+Before packaging, complete these items:
+
+- same-origin browser-to-backend proxying;
+- dynamic model catalog loading;
+- real workspace file/diff events;
+- conversation database migration;
+- API key settings screen;
+- AppImage build and runtime dependency tests.
+
+---
+
+## 13. Uninstall / reset
 
 ```bash
 systemctl --user disable --now agy-nvidia-proxy 2>/dev/null

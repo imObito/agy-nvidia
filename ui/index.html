@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AGY NVIDIA — Studio</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">A</span><span>AGY <b>/</b> NVIDIA</span><span class="brand-tag">STUDIO</span></div>
+      <div class="topbar-center"><span class="status-dot"></span><span id="connectionText">Router online</span><span class="divider"></span><span id="modelText">Nemotron Ultra</span></div>
+      <div class="top-actions"><button class="icon-btn" id="themeBtn" title="Toggle theme">◐</button><button class="icon-btn" id="settingsBtn" title="Settings">⚙</button></div>
+    </header>
+    <div class="workspace">
+      <nav class="rail">
+        <button class="rail-btn active" data-view="chat" title="Chat">✦</button>
+        <button class="rail-btn" data-view="history" title="History">◷</button>
+        <button class="rail-btn" data-view="models" title="Models">◈</button>
+        <button class="rail-btn" data-view="logs" title="Logs">≋</button>
+        <div class="rail-spacer"></div><button class="rail-btn" id="newChatRail" title="New chat">＋</button>
+      </nav>
+      <main class="main-panel">
+        <section class="view active" id="chatView">
+          <aside class="changes-panel">
+            <div class="panel-heading"><div><span class="eyebrow">WORKSPACE</span><h2>Code &amp; Changes</h2></div><span class="live-pill"><i></i> LIVE</span></div>
+            <div class="file-tabs"><button class="file-tab active"><span class="file-dot"></span>compare.js <span class="change-count">+ 12</span></button></div>
+            <pre class="code-view" id="codeView"><code><span class="ln">1</span> <span class="kw">export function</span> <span class="fn">compare</span>(a, b) {
+<span class="ln">2</span>   <span class="kw">if</span> (a === b) <span class="kw">return</span> <span class="str">"equal"</span>;
+<span class="ln">3</span>   <span class="kw">return</span> a &gt; b ? <span class="str">"greater"</span> : <span class="str">"less"</span>;
+<span class="ln">4</span> }</code></pre>
+            <div class="change-footer"><span><b id="changedLines">4</b> lines edited</span><button class="ghost-btn" id="reviewBtn">Review code <span>↗</span></button></div>
+          </aside>
+          <section class="chat-panel">
+            <div class="chat-header"><div><span class="eyebrow">ACTIVE SESSION</span><h1 id="chatTitle">New conversation</h1></div><div class="chat-header-actions"><span class="latency" id="latency">—</span><button class="more-btn">•••</button></div></div>
+            <div class="messages" id="messages"><div class="welcome"><div class="orb"></div><span class="eyebrow">READY TO BUILD</span><h2>What are we creating<br>with <em>intelligence</em> today?</h2><p>Ask anything. Your workspace will unfold as we go.</p><div class="suggestions"><button>Compare numbers and strings</button><button>Refactor this module</button><button>Trace a subtle bug</button></div></div></div>
+            <div class="composer-wrap"><div class="composer" id="composer"><textarea id="input" rows="1" placeholder="Ask AI anything or write your request..."></textarea><div class="composer-bottom"><div class="composer-tools"><button title="Attach">＋</button><button title="Add context">◉</button><button title="Tools">⌘</button></div><div class="send-group"><select id="modelSelect" aria-label="Model"><option value="gemini-3.8-flash-medium">Nemotron Ultra</option><option value="gemini-3.7-flash-medium">Nemotron Super</option><option value="gemini-3.6-flash-medium">Llama Vision</option><option value="gemini-3.1-pro-preview">DeepSeek</option></select><button class="send-btn" id="sendBtn">➤</button></div></div></div><div class="composer-note">AGY NVIDIA ROUTER <span>·</span> LOCAL-FIRST <span>·</span> SECURE</div></div>
+          </section>
+        </section>
+        <section class="view simple-view" id="historyView"><span class="eyebrow">ARCHIVE</span><h2>Conversation history</h2><div class="empty-state">Your saved conversations will appear here.</div></section>
+        <section class="view simple-view" id="modelsView"><span class="eyebrow">MODEL ROUTER</span><h2>Choose your intelligence</h2><div class="model-grid" id="modelGrid"></div></section>
+        <section class="view simple-view" id="logsView"><span class="eyebrow">OBSERVABILITY</span><h2>Router activity</h2><pre class="log-view" id="logView">Waiting for requests...</pre></section>
+      </main>
+    </div>
+  </div>
+  <dialog id="settingsDialog"><form method="dialog"><div class="dialog-head"><span class="eyebrow">PREFERENCES</span><h2>Settings</h2><button class="icon-btn" value="cancel">×</button></div><label>Theme<select id="themeSelect"><option value="dark">Midnight</option><option value="light">Porcelain</option></select></label><label>Default model<select id="defaultModel"><option value="gemini-3.8-flash-medium">Nemotron Ultra</option><option value="gemini-3.7-flash-medium">Nemotron Super</option><option value="gemini-3.6-flash-medium">Llama Vision</option><option value="gemini-3.1-pro-preview">DeepSeek</option></select></label><label>Font size<input id="fontSize" type="range" min="13" max="18" value="15"></label><div class="dialog-actions"><button class="ghost-btn" value="cancel">Cancel</button><button class="primary-btn" id="saveSettings" value="default">Save changes</button></div></form></dialog>
+  <script src="app.js"></script>
+</body>
+</html>

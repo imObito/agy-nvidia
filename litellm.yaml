@@ -1,64 +1,112 @@
 # LiteLLM proxy: translates Antigravity CLI's Gemini-format requests
 # into OpenAI-format calls against NVIDIA build.nvidia.com.
-# Used only by the `agy-nvidia` wrapper; the standalone Antigravity app
-# never touches this file or this port.
+# Preset: 3.7 -> Nemotron Super 120B, 3.8 -> Nemotron Ultra 550B,
+# 3.6 -> Llama vision, pro/low/high -> DeepSeek.
+# These are NVIDIA-hosted free-tier models with larger context windows.
 model_list:
-  # -- observed in live capture from agy --
+  # -- pro / low / high efforts -> DeepSeek --
   - model_name: gemini-3.1-pro-preview
-    litellm_params: &nemotron
+    litellm_params: &pro
       model: openai/deepseek-ai/deepseek-v4.1-flash
       api_base: https://integrate.api.nvidia.com/v1
       api_key: os.environ/NVIDIA_API_KEY
   - model_name: gemini-3.1-flash-lite-preview
-    litellm_params: *nemotron
-
-  # -- picker slugs / alternates (agy may resolve these depending on settings) --
+    litellm_params: *pro
   - model_name: gemini-3.1-pro
-    litellm_params: *nemotron
+    litellm_params: *pro
   - model_name: gemini-3.1-pro-high
-    litellm_params: *nemotron
+    litellm_params: *pro
   - model_name: gemini-3.1-pro-low
-    litellm_params: *nemotron
+    litellm_params: *pro
   - model_name: gemini-3.1-pro-low-thinking
-    litellm_params: *nemotron
+    litellm_params: *pro
   - model_name: gemini-3.1-pro-preview-custom
-    litellm_params: *nemotron
+    litellm_params: *pro
   - model_name: gemini-3.1-flash-lite
-    litellm_params: *nemotron
+    litellm_params: *pro
   - model_name: gemini-3-flash-preview
-    litellm_params: *nemotron
+    litellm_params: *pro
   - model_name: gemini-3.5-flash-extra-low
-    litellm_params: *nemotron
+    litellm_params: *pro
   - model_name: gemini-3.5-flash-low
-    litellm_params: *nemotron
-  - model_name: gemini-3.6-flash-high
-    litellm_params: *nemotron
-  - model_name: gemini-3.6-flash-medium
-    litellm_params: *nemotron
-  - model_name: gemini-3.6-flash-low
-    litellm_params: *nemotron
-  - model_name: gemini-3.7-flash-high
-    litellm_params: *nemotron
-  - model_name: gemini-3.7-flash-medium
-    litellm_params: *nemotron
-  - model_name: gemini-3.7-flash-low
-    litellm_params: *nemotron
-  - model_name: gemini-3.8-flash
-    litellm_params: *nemotron
-  - model_name: gemini-3.8-flash-high
-    litellm_params: *nemotron
-  - model_name: gemini-3.8-flash-medium
-    litellm_params: *nemotron
-  - model_name: gemini-3.8-flash-low
-    litellm_params: *nemotron
+    litellm_params: *pro
   - model_name: claude-sonnet-4-6
-    litellm_params: *nemotron
+    litellm_params: *pro
   - model_name: claude-opus-4-6-thinking
-    litellm_params: *nemotron
+    litellm_params: *pro
   - model_name: gpt-oss-120b-medium
-    litellm_params: *nemotron
+    litellm_params: *pro
+
+  # -- 3.6 -> free/stable vision --
+  - model_name: gemini-3.6-flash-high
+    litellm_params: &free
+      model: openai/meta/llama-3.2-11b-vision-instruct
+      api_base: https://integrate.api.nvidia.com/v1
+      api_key: os.environ/NVIDIA_API_KEY
+  - model_name: gemini-3.6-flash-medium
+    litellm_params: *free
+  - model_name: gemini-3.6-flash-low
+    litellm_params: *free
+  - model_name: gemini-3.6-flash
+    litellm_params: *free
+
+  # -- 3.7 -> Nemotron Super 120B --
+  - model_name: gemini-3.7-flash-high
+    litellm_params: &super
+      model: openai/nvidia/nemotron-3-super-120b-a12b
+      api_base: https://integrate.api.nvidia.com/v1
+      api_key: os.environ/NVIDIA_API_KEY
+  - model_name: gemini-3.7-flash-medium
+    litellm_params: *super
+  - model_name: gemini-3.7-flash-low
+    litellm_params: *super
+  - model_name: gemini-3.7-flash
+    litellm_params: *super
+
+  # -- 3.8 -> Nemotron Ultra 550B --
+  - model_name: gemini-3.8-flash
+    litellm_params: &ultra
+      model: openai/nvidia/nemotron-3-ultra-550b-a55b
+      api_base: https://integrate.api.nvidia.com/v1
+      api_key: os.environ/NVIDIA_API_KEY
+  - model_name: gemini-3.8-flash-high
+    litellm_params: *ultra
+  - model_name: gemini-3.8-flash-medium
+    litellm_params: *ultra
+  - model_name: gemini-3.8-flash-low
+    litellm_params: *ultra
+
+  # Router targets used only after a pre-stream failure.
+  - model_name: router-nemotron-super
+    litellm_params: *super
+  - model_name: router-nemotron-ultra
+    litellm_params: *ultra
+  - model_name: router-llama-vision
+    litellm_params: *free
+  - model_name: router-deepseek
+    litellm_params: *pro
+
+# Fallbacks are intentionally one-way. Never point an alias back to an alias
+# that can point back to it: recursive fallback chains create loops and can
+# turn one upstream failure into repeated requests.
+fallbacks:
+  - gemini-3.7-flash-high: [gemini-3.7-flash-medium, gemini-3.1-pro-preview, gemini-3.6-flash-medium]
+  - gemini-3.7-flash-medium: [gemini-3.1-pro-preview, gemini-3.6-flash-medium]
+  - gemini-3.7-flash-low: [gemini-3.7-flash-medium, gemini-3.1-pro-preview, gemini-3.6-flash-medium]
+  - gemini-3.7-flash: [gemini-3.7-flash-medium, gemini-3.1-pro-preview, gemini-3.6-flash-medium]
+  - gemini-3.8-flash-high: [gemini-3.8-flash-medium, gemini-3.7-flash-medium, gemini-3.1-pro-preview, gemini-3.6-flash-medium]
+  - gemini-3.8-flash-medium: [gemini-3.7-flash-medium, gemini-3.1-pro-preview, gemini-3.6-flash-medium]
+  - gemini-3.8-flash-low: [gemini-3.8-flash-medium, gemini-3.7-flash-medium, gemini-3.1-pro-preview, gemini-3.6-flash-medium]
+  - gemini-3.8-flash: [gemini-3.8-flash-medium, gemini-3.7-flash-medium, gemini-3.1-pro-preview, gemini-3.6-flash-medium]
+  # DeepSeek and Llama aliases are terminal fallbacks: they never fall back
+  # again, so every route is finite.
+  - gemini-3.6-flash-high: [gemini-3.1-pro-preview]
+  - gemini-3.6-flash-medium: [gemini-3.1-pro-preview]
+  - gemini-3.6-flash-low: [gemini-3.1-pro-preview]
+  - gemini-3.6-flash: [gemini-3.1-pro-preview]
 
 litellm_settings:
-  drop_params: true          # discard Gemini-only params NVIDIA doesn't understand
+  drop_params: true
   set_verbose: false
-  num_retries: 2
+  num_retries: 0
+  timeout: 120
